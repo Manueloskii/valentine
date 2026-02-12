@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Will you be my Valentine?">
+  <title>Be my Valentine?</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    ::selection { background: #e11d48; color: white; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: url("assets/heart-hands-bg.png") center/cover fixed;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: calc(24px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+      color: #18181b;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    .container { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px; }
+    .ask-img { width: 180px; aspect-ratio: 3/4; object-fit: cover; object-position: 50% 18%; border-radius: 8px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); max-width: 85vw; }
+    @media (min-width: 640px) { .ask-img { width: 230px; } }
+    h1 { font-size: 1.5rem; background: rgba(255,255,255,0.5); padding: 12px 16px; border-radius: 8px; margin: 0 8px; max-width: 95vw; }
+    @media (min-width: 640px) { h1 { font-size: 2.25rem; padding: 16px 24px; } }
+    @media (min-width: 768px) { h1 { font-size: 3.75rem; } }
+    .buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; align-items: center; }
+    .yes-btn { background: #22c55e; color: white; font-weight: bold; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; min-height: 44px; min-width: 44px; touch-action: manipulation; }
+    .yes-btn:hover { background: #16a34a; }
+    .no-btn { background: #f43f5e; color: white; font-weight: bold; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; min-height: 44px; min-width: 44px; touch-action: manipulation; }
+    .no-btn:hover { background: #e11d48; }
+    .hint-box { display: flex; align-items: center; gap: 4px; min-width: 140px; }
+    .hint-text { background: #fbbf24; color: #451a03; font-weight: bold; padding: 4px 12px; border-radius: 8px; font-size: 14px; white-space: nowrap; animation: pulse 2s infinite; }
+    @keyframes pulse { 50% { opacity: 0.5; } }
+    .corner-img { position: fixed; width: 80px; height: 80px; object-fit: cover; border-radius: 8px; }
+    @media (min-width: 640px) { .corner-img { width: 112px; height: 112px; } }
+    .tl { top: 16px; left: 16px; }
+    .tr { top: 16px; right: 16px; }
+    .bl { bottom: 16px; left: 16px; }
+    .br { bottom: 16px; right: 16px; }
+    .success-text { font-size: 1.5rem; font-weight: bold; margin: 16px 0; text-align: center; padding: 0 8px; }
+    @media (min-width: 640px) { .success-text { font-size: 2.25rem; } }
+    @media (min-width: 768px) { .success-text { font-size: 3.75rem; } }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    (function() {
+      const phrases = ["No", "Are you sure dummy?!", "Really sure you cutie patoootiee?", "Não estou brincando, eh! MINHA LUIZA!", "Last chance!", "BDA BDA BDA CLICK YES ALREADY BRUH", "You might regret this!", "Give it another thought!", "Are you absolutely certain?"];
+      let noCount = 0;
+      let yesPressed = false;
+
+      function render() {
+        const app = document.getElementById("app");
+        if (yesPressed) {
+          app.innerHTML = '<img class="corner-img tl" src="assets/dudu-dudu-bubu.gif" alt=""><img class="corner-img tr" src="assets/dudu-dudu-bubu.gif" alt=""><img class="corner-img bl" src="assets/dudu-dudu-bubu.gif" alt=""><img class="corner-img br" src="assets/dudu-dudu-bubu.gif" alt=""><img class="ask-img" src="assets/Lesgo.gif" alt=""><div class="success-text">LESGOOOO<br>TIAMOOO!!!!!!!</div>';
+        } else {
+          const yesSize = Math.min(noCount * 20 + 16, 64);
+          let html = '<div class="container">';
+          html += '<img class="ask-img" src="assets/AskFace.gif" alt="">';
+          html += '<h1>Will you be my Valentine?</h1>';
+          html += '<div class="buttons">';
+          if (noCount === 0) html += '<div class="hint-box"><span class="hint-text">HINT!</span><svg width="80" height="32" viewBox="0 0 120 40"><path d="M0 20 L85 20" stroke="#fbbf24" stroke-width="4" stroke-linecap="round"/><path d="M85 6 L110 20 L85 34" fill="#fbbf24"/></svg></div>';
+          html += '<button class="yes-btn" onclick="window.yesClick()" style="font-size:' + yesSize + 'px">Yes</button>';
+          if (noCount < 9) html += '<button class="no-btn" onclick="window.noClick()">' + phrases[Math.min(noCount, 8)] + '</button>';
+          html += '</div></div>';
+          app.innerHTML = html;
+        }
+      }
+
+      window.yesClick = function() { yesPressed = true; render(); };
+      window.noClick = function() { noCount++; render(); };
+
+      render();
+    })();
+  </script>
+</body>
+</html>
