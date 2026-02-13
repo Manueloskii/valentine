@@ -49,6 +49,21 @@
     .success-text { font-size: 1.5rem; font-weight: bold; margin: 16px 0; text-align: center; padding: 0 8px; }
     @media (min-width: 640px) { .success-text { font-size: 2.25rem; } }
     @media (min-width: 768px) { .success-text { font-size: 3.75rem; } }
+    .gift-section { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 16px; }
+    .gift-btn { background: linear-gradient(135deg, #ec4899, #8b5cf6); color: white; font-weight: bold; padding: 14px 28px; border: none; border-radius: 12px; cursor: pointer; font-size: 1.1rem; box-shadow: 0 4px 14px rgba(236,72,153,0.4); transition: transform 0.2s, box-shadow 0.2s; }
+    .gift-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 6px 20px rgba(236,72,153,0.5); }
+    .gift-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+    .countdown { font-size: 1rem; color: #64748b; font-weight: 500; }
+    .gift-video-wrap { margin-top: 20px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.2); max-width: 95vw; }
+    .gift-video { width: 100%; max-height: 70vh; display: block; }
+    #app { display: flex; flex-direction: column; align-items: center; width: 100%; }
+    .ask-img { margin-left: auto; margin-right: auto; display: block; }
+    .ask-img.draggable, .corner-img.draggable { cursor: grab; z-index: 1000; user-select: none; touch-action: none; }
+    .ask-img.draggable:active, .corner-img.draggable:active { cursor: grabbing; }
+    .gif-wrapper { position: fixed; z-index: 1000; overflow: visible; }
+    .gif-wrapper img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+    .gif-wrapper .resize-handle { position: absolute; bottom: -4px; right: -4px; width: 24px; height: 24px; cursor: nwse-resize; touch-action: none; background: rgba(0,0,0,0.2); border-radius: 4px; }
+    .gif-wrapper .resize-handle::after { content: ""; position: absolute; bottom: 6px; right: 6px; width: 8px; height: 8px; border-right: 2px solid white; border-bottom: 2px solid white; }
   </style>
 </head>
 <body>
@@ -56,13 +71,81 @@
   <script>
     (function() {
       const phrases = ["No", "Are you sure dummy?!", "Really sure you cutie patoootiee?", "Não estou brincando, eh! MINHA LUIZA!", "Last chance!", "BDA BDA BDA CLICK YES ALREADY BRUH", "You might regret this!", "Give it another thought!", "Are you absolutely certain?"];
+      // Feb 14 midnight local = switch to "WAIT AMOR"
+      const FEB14_START = new Date(2026, 1, 14, 0, 0, 0);
+      // Feb 14, 2026 3pm Pacific = 8pm Brazil - gift unlock
+      const GIFT_DATE = new Date("2026-02-14T23:00:00Z");
       let noCount = 0;
       let yesPressed = false;
+      let giftRevealed = false;
+      let countdownInterval = null;
+
+      function getTimeLeftToFeb14() {
+        const now = new Date();
+        const diff = FEB14_START - now;
+        if (diff <= 0) return null;
+        const d = Math.floor(diff / 86400000);
+        const h = Math.floor((diff % 86400000) / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        return d + "d " + h + "h " + m + "m " + s + "s";
+      }
+
+      function isGiftAvailable() { return new Date() >= GIFT_DATE; }
+      function isFeb14() { return new Date() >= FEB14_START; }
+
+      function renderSuccess() {
+        const app = document.getElementById("app");
+        const available = isGiftAvailable();
+        const feb14 = isFeb14();
+        const timeLeft = getTimeLeftToFeb14();
+        let html = '<img class="corner-img tl" src="assets/dudu-dudu-bubu.gif" alt=""><img class="corner-img tr" src="assets/dudu-dudu-bubu.gif" alt=""><img class="corner-img bl" src="assets/dudu-dudu-bubu.gif" alt=""><img class="corner-img br" src="assets/dudu-dudu-bubu.gif" alt=""><img class="ask-img" src="assets/Lesgo.gif" alt=""><div class="success-text">LESGOOOO<br>TIAMOOO!!!!!!!</div>';
+        html += '<div class="gift-section">';
+        if (giftRevealed) {
+          html += '<div class="gift-video-wrap"><video class="gift-video" src="assets/gift.mp4" controls autoplay></video></div>';
+        } else {
+          if (timeLeft) {
+            html += '<div class="countdown" id="countdown">' + timeLeft + '</div>';
+            html += '<button class="gift-btn" disabled>Unlocks Feb 14, 2026 &lt;3 (when me will show you one more gift for you)</button>';
+          } else {
+            html += '<button class="gift-btn" id="giftBtn" ' + (available ? '' : 'disabled') + ' onclick="window.openGift()">' + (available ? '🎁 Open your gift!' : 'WAIT AMOR... hehehe') + '</button>';
+          }
+        }
+        html += '</div>';
+        app.innerHTML = html;
+        if (timeLeft && countdownInterval) clearInterval(countdownInterval);
+        if (timeLeft) {
+          countdownInterval = setInterval(function() {
+            const t = getTimeLeftToFeb14();
+            const el = document.getElementById("countdown");
+            if (el) el.textContent = t || "It's Feb 14!";
+            if (!t) {
+              clearInterval(countdownInterval);
+              renderSuccess();
+            }
+          }, 1000);
+        } else if (feb14 && !available) {
+          countdownInterval = setInterval(function() {
+            if (isGiftAvailable()) {
+              clearInterval(countdownInterval);
+              renderSuccess();
+            }
+          }, 1000);
+        }
+        enableDraggableAfterDelay();
+      }
+
+      window.openGift = function() {
+        if (!isGiftAvailable()) return;
+        giftRevealed = true;
+        if (countdownInterval) clearInterval(countdownInterval);
+        renderSuccess();
+      };
 
       function render() {
         const app = document.getElementById("app");
         if (yesPressed) {
-          app.innerHTML = '<img class="corner-img tl" src="assets/dudu-dudu-bubu.gif" alt=""><img class="corner-img tr" src="assets/dudu-dudu-bubu.gif" alt=""><img class="corner-img bl" src="assets/dudu-dudu-bubu.gif" alt=""><img class="corner-img br" src="assets/dudu-dudu-bubu.gif" alt=""><img class="ask-img" src="assets/Lesgo.gif" alt=""><div class="success-text">LESGOOOO<br>TIAMOOO!!!!!!!</div>';
+          renderSuccess();
         } else {
           const yesSize = Math.min(noCount * 20 + 16, 64);
           let html = '<div class="container">';
@@ -79,6 +162,116 @@
 
       window.yesClick = function() { yesPressed = true; render(); };
       window.noClick = function() { noCount++; render(); };
+
+      function makeDraggable(el) {
+        if (el.dataset.draggable) return;
+        el.dataset.draggable = "1";
+        el.classList.add("draggable");
+        var rect = el.getBoundingClientRect();
+        var wasInFlow = getComputedStyle(el).position !== "fixed";
+        if (wasInFlow) {
+          var spacer = document.createElement("div");
+          spacer.style.width = rect.width + "px";
+          spacer.style.height = rect.height + "px";
+          spacer.style.flexShrink = "0";
+          spacer.style.visibility = "hidden";
+          el.parentNode.insertBefore(spacer, el);
+        }
+        var wrapper = document.createElement("div");
+        wrapper.className = "gif-wrapper";
+        wrapper.style.left = rect.left + "px";
+        wrapper.style.top = rect.top + "px";
+        wrapper.style.width = rect.width + "px";
+        wrapper.style.height = rect.height + "px";
+        wrapper.style.cursor = "grab";
+        el.parentNode.insertBefore(wrapper, el);
+        el.style.width = "100%";
+        el.style.height = "100%";
+        el.style.margin = "0";
+        el.style.position = "";
+        el.style.left = "";
+        el.style.top = "";
+        el.style.right = "";
+        el.style.bottom = "";
+        wrapper.appendChild(el);
+        var resizeHandle = document.createElement("div");
+        resizeHandle.className = "resize-handle";
+        resizeHandle.title = "Drag to resize";
+        wrapper.appendChild(resizeHandle);
+        var offsetX = 0, offsetY = 0, dragActive = false;
+        var startW = 0, startH = 0, startX = 0, startY = 0, resizeActive = false;
+        wrapper.addEventListener("pointerdown", function(e) {
+          if (e.target === resizeHandle) return;
+          if (e.button !== 0 && e.pointerType === "mouse") return;
+          e.preventDefault();
+          var r = wrapper.getBoundingClientRect();
+          offsetX = e.clientX - r.left;
+          offsetY = e.clientY - r.top;
+          dragActive = true;
+          wrapper.setPointerCapture(e.pointerId);
+        });
+        resizeHandle.addEventListener("pointerdown", function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          startW = wrapper.offsetWidth;
+          startH = wrapper.offsetHeight;
+          startX = e.clientX;
+          startY = e.clientY;
+          resizeActive = true;
+          wrapper.setPointerCapture(e.pointerId);
+        });
+        function onPointerMove(e) {
+          if (dragActive) {
+            wrapper.style.left = (e.clientX - offsetX) + "px";
+            wrapper.style.top = (e.clientY - offsetY) + "px";
+          } else if (resizeActive) {
+            var dw = e.clientX - startX;
+            var dh = e.clientY - startY;
+            var newW = Math.max(60, startW + dw);
+            var newH = Math.max(60, startH + dh);
+            wrapper.style.width = newW + "px";
+            wrapper.style.height = newH + "px";
+          }
+        }
+        function onPointerUp(e) {
+          dragActive = false;
+          resizeActive = false;
+          wrapper.releasePointerCapture(e.pointerId);
+        }
+        wrapper.addEventListener("pointermove", onPointerMove);
+        wrapper.addEventListener("pointerup", onPointerUp);
+        wrapper.addEventListener("pointercancel", onPointerUp);
+        wrapper.addEventListener("pointerleave", onPointerUp);
+        wrapper.style.cursor = "grab";
+        wrapper.addEventListener("pointerdown", function() { wrapper.style.cursor = "grabbing"; });
+        wrapper.addEventListener("pointerup", function() { wrapper.style.cursor = "grab"; });
+      }
+
+      function enableDraggableAfterDelay() {
+        setTimeout(function() {
+          var imgs = document.querySelectorAll(".ask-img, .corner-img");
+          imgs.forEach(makeDraggable);
+        }, 3000);
+      }
+
+      function render() {
+        var app = document.getElementById("app");
+        if (yesPressed) {
+          renderSuccess();
+        } else {
+          const yesSize = Math.min(noCount * 20 + 16, 64);
+          let html = '<div class="container">';
+          html += '<img class="ask-img" src="assets/AskFace.gif" alt="">';
+          html += '<h1>Will you be my Valentine?</h1>';
+          html += '<div class="buttons">';
+          if (noCount === 0) html += '<div class="hint-box"><span class="hint-text">HINT!</span><svg width="80" height="32" viewBox="0 0 120 40"><path d="M0 20 L85 20" stroke="#fbbf24" stroke-width="4" stroke-linecap="round"/><path d="M85 6 L110 20 L85 34" fill="#fbbf24"/></svg></div>';
+          html += '<button class="yes-btn" onclick="window.yesClick()" style="font-size:' + yesSize + 'px">Yes</button>';
+          if (noCount < 9) html += '<button class="no-btn" onclick="window.noClick()">' + phrases[Math.min(noCount, 8)] + '</button>';
+          html += '</div></div>';
+          app.innerHTML = html;
+        }
+        enableDraggableAfterDelay();
+      }
 
       render();
     })();
