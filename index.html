@@ -60,7 +60,7 @@
     .ask-img { margin-left: auto; margin-right: auto; display: block; }
     .ask-img.draggable, .corner-img.draggable { cursor: grab; z-index: 1000; user-select: none; touch-action: none; }
     .ask-img.draggable:active, .corner-img.draggable:active { cursor: grabbing; }
-    .gif-wrapper { position: fixed; z-index: 1000; overflow: visible; }
+    .gif-wrapper { position: fixed; z-index: 1000; overflow: visible; touch-action: none; user-select: none; -webkit-user-select: none; }
     .gif-wrapper img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
     .gif-wrapper .resize-handle { position: absolute; bottom: -4px; right: -4px; width: 24px; height: 24px; cursor: nwse-resize; touch-action: none; background: rgba(0,0,0,0.2); border-radius: 4px; }
     .gif-wrapper .resize-handle::after { content: ""; position: absolute; bottom: 6px; right: 6px; width: 8px; height: 8px; border-right: 2px solid white; border-bottom: 2px solid white; }
@@ -200,31 +200,39 @@
         wrapper.appendChild(resizeHandle);
         var offsetX = 0, offsetY = 0, dragActive = false;
         var startW = 0, startH = 0, startX = 0, startY = 0, resizeActive = false;
-        wrapper.addEventListener("pointerdown", function(e) {
+        function onDragStart(e) {
           if (e.target === resizeHandle) return;
           if (e.button !== 0 && e.pointerType === "mouse") return;
           e.preventDefault();
+          e.stopPropagation();
           var r = wrapper.getBoundingClientRect();
           offsetX = e.clientX - r.left;
           offsetY = e.clientY - r.top;
           dragActive = true;
+          document.addEventListener("touchmove", stopScroll, { passive: false });
           wrapper.setPointerCapture(e.pointerId);
-        });
+        }
+        wrapper.addEventListener("pointerdown", onDragStart, { passive: false });
+        wrapper.addEventListener("touchstart", function(e) { if (e.target !== resizeHandle) e.preventDefault(); }, { passive: false });
         resizeHandle.addEventListener("pointerdown", function(e) {
           e.preventDefault();
           e.stopPropagation();
           startW = wrapper.offsetWidth;
           startH = wrapper.offsetHeight;
-          startX = e.clientX;
-          startY = e.clientY;
+          startX = e.clientX ?? e.touches?.[0]?.clientX;
+          startY = e.clientY ?? e.touches?.[0]?.clientY;
           resizeActive = true;
+          document.addEventListener("touchmove", stopScroll, { passive: false });
           wrapper.setPointerCapture(e.pointerId);
-        });
+        }, { passive: false });
+        resizeHandle.addEventListener("touchstart", function(e) { e.preventDefault(); }, { passive: false });
         function onPointerMove(e) {
           if (dragActive) {
+            e.preventDefault();
             wrapper.style.left = (e.clientX - offsetX) + "px";
             wrapper.style.top = (e.clientY - offsetY) + "px";
           } else if (resizeActive) {
+            e.preventDefault();
             var dw = e.clientX - startX;
             var dh = e.clientY - startY;
             var newW = Math.max(60, startW + dw);
@@ -236,12 +244,20 @@
         function onPointerUp(e) {
           dragActive = false;
           resizeActive = false;
-          wrapper.releasePointerCapture(e.pointerId);
+          document.removeEventListener("touchmove", stopScroll);
+          try { wrapper.releasePointerCapture(e.pointerId); } catch(_) {}
         }
-        wrapper.addEventListener("pointermove", onPointerMove);
+        function stopScroll(e) {
+          e.preventDefault();
+        }
+        wrapper.addEventListener("pointermove", onPointerMove, { passive: false });
         wrapper.addEventListener("pointerup", onPointerUp);
         wrapper.addEventListener("pointercancel", onPointerUp);
         wrapper.addEventListener("pointerleave", onPointerUp);
+        wrapper.addEventListener("touchend", onPointerUp);
+        wrapper.addEventListener("touchcancel", onPointerUp);
+        resizeHandle.addEventListener("touchend", onPointerUp);
+        resizeHandle.addEventListener("touchcancel", onPointerUp);
         wrapper.style.cursor = "grab";
         wrapper.addEventListener("pointerdown", function() { wrapper.style.cursor = "grabbing"; });
         wrapper.addEventListener("pointerup", function() { wrapper.style.cursor = "grab"; });
